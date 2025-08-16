@@ -53,13 +53,35 @@ const OthelloGame: React.FC<OthelloGameProps> = ({
 
   // Effect to trigger AI moves
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    
     if (gameMode === 'human-vs-ai' && 
         gameState.currentPlayer === 'white' &&
         gameState.gameStatus === 'playing' &&
         !isAiThinking) {
-      makeAiMove();
+      
+      timeoutId = setTimeout(async () => {
+        setIsAiThinking(true);
+        
+        // Small delay for UX
+        await new Promise(resolve => setTimeout(resolve, 800));
+        
+        const aiMove = aiPlayer.getBestMove(gameState.board, 'white');
+        
+        if (aiMove) {
+          const newGameState = updateGameState(gameState, aiMove.row, aiMove.col);
+          setGameState(newGameState);
+          setGameHistory(prev => [...prev, newGameState]);
+        }
+        
+        setIsAiThinking(false);
+      }, 100); // Small delay to ensure state is settled
     }
-  }, [gameMode, gameState.currentPlayer, gameState.gameStatus, isAiThinking, makeAiMove]);
+    
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [gameMode, gameState.currentPlayer, gameState.gameStatus, gameState.board, aiPlayer, isAiThinking]);
 
   const handleCellClick = (row: number, col: number) => {
     // Prevent moves when AI is thinking or game is over
